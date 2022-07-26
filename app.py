@@ -220,4 +220,4 @@ def summary(test = False):
             "heads-up":heads_up
         }
     }
-    return json.dumps(json_object)
+    return json.dumps(json_object, ensure_ascii=False)
