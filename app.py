@@ -8,6 +8,11 @@ app = Flask(__name__)
 
 url = 'https://thirdparty-weather-api-v2.droom.workers.dev'
 
+from concurrent.futures import (
+    ThreadPoolExecutor,
+    as_completed
+)
+
 @app.route('/')
 def home():
     return jsonify(text='welcome~ ')
@@ -50,6 +55,7 @@ def history(lat, lon, hour_offset, api_key):
 @elapsed_time
 @app.route('/summary')
 def summary(test = False):
+    api_key = 'CMRJW4WT7V3QA5AOIGPBC'
 
     #for test
     if test is False:
@@ -58,28 +64,26 @@ def summary(test = False):
     else :
         lat = 10
         lon = 3
-    api_key = 'CMRJW4WT7V3QA5AOIGPBC'
 
-
-    if lat is None or lon is None:
-        lat = 10
-        lon = 3
+    # if lat is None or lon is None:
         #return '400 error'
 
-    print(f'현재')
-    current(lat, lon, api_key)
-    greeting = ''
-
     print(f'과거')
-    for t in range(-24,0,6):
-        history(lat, lon, t, api_key)
-        print(f'> {t} 전 과거')
-    temperature = ''
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures_h = [executor.submit(history,lat,lon,t,api_key)
+                   for t in range(-24,0,6)]
+        futures_f = [executor.submit(forcast,lat,lon, t,api_key)
+                   for t in range(6,50,6)]
+        futures_c = [executor.submit(current,lat,lon, api_key)]
+        for future in as_completed(futures_c):
+            print(future.result())
+        for future in as_completed(futures_h):
+            print(future.result())
+        for future in as_completed(futures_f):
+            print(future.result())
 
-    print(f'미래')
-    for t in range(6,50,6):
-        forcast(lat, lon, t, api_key)
-        print(f'> {t} 후 미래')
+    greeting = ''
+    temperature = ''
     heads_up = ''
 
     json_object = {
@@ -90,4 +94,3 @@ def summary(test = False):
         }
     }
     return json.dumps(json_object)
-    #return jsonify(text='hello world!?', count = 0)
