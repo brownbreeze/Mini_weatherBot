@@ -2,7 +2,7 @@ from flask import Flask, jsonify, request
 import json
 import requests
 import time
-
+import os
 
 app = Flask(__name__)
 
@@ -79,7 +79,7 @@ def get_tempaerature_ment(idx, diff_temper, max_temp, min_temp):
     ]
     temperature_last_ment = f' 최고기온은 {max_temp}도, 최저기온은 {min_temp}도 입니다.'
     result = ''
-    if idx is not -1:
+    if idx != -1:
         result = temperature_ment_list[idx]
     result += temperature_last_ment
     return result
@@ -87,7 +87,8 @@ def get_tempaerature_ment(idx, diff_temper, max_temp, min_temp):
 @elapsed_time
 @app.route('/summary')
 def summary(test = False):
-    api_key = 'CMRJW4WT7V3QA5AOIGPBC'
+    #api_key = 'CMRJW4WT7V3QA5AOIGPBC'
+    api_key = get_apikey("Authorization")
     current_list = list()
     forcast_list = list()
     history_list = list()
@@ -221,3 +222,29 @@ def summary(test = False):
         }
     }
     return json.dumps(json_object, ensure_ascii=False)
+
+def get_apikey(key_name, json_filename='secret.json'):
+    # 해당 py파일의 속해 있는 폴더가 base_dir
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    # 해당 프로젝트 파일내 json파일이 있으므로 폴더패스와 파일이름을 합쳐 json_file의 절대경로값 얻는다
+    json_filepath = os.path.join(BASE_DIR, json_filename)
+
+    # json_file이 존재하지 않으면 error 발생
+    if(not os.path.isfile(json_filepath)):
+        print("JSON File Not Found")
+        raise FileNotFoundError
+
+    # json파일이 존재하면 json파일내의 모든 key, value값을 얻는다
+    with open(json_filepath) as f:
+        json_p = json.loads(f.read())
+        print("json_p:  ", json_p)
+
+    try:
+        # key에 해당하는 value를 얻는다 ex. json_p["Authorization"]
+        value=json_p[key_name]
+        print(value)
+        return value
+    except KeyError:
+        # 해당하는 key_name이 없는 경우이다
+        error_msg = "ERROR: Unvalid Key"
+        return error_msg
