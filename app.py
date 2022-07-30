@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 import json
 import requests
 import time
@@ -97,11 +97,21 @@ def summary(test = False):
         lat = request.args.get('lat')
         lon = request.args.get('lon')
     else :
-        lat = 10
-        lon = 3
+        lat = -13.3
+        lon = 125
 
-    # if lat is None or lon is None:
-        #return '400 error'
+    if lat is None or lon is None:
+        return Response(
+            "Bad Request",
+            status=400)
+    elif float(lat) < -90.0 or float(lat) >= 90 :
+        return Response(
+            "Bad Request",
+            status=400)
+    elif float(lon) < -180.0 or float(lon) >= 180.0 :
+        return Response(
+            "Bad Request",
+            status=400)
 
     with ThreadPoolExecutor(max_workers=10) as executor:
         futures_h = [executor.submit(history,lat,lon,t,api_key)
