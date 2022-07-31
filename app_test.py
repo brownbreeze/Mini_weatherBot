@@ -18,20 +18,24 @@ def test_sample(client):
 def test_normal(client):
     status_code, body, data = do_get(client, '/summary?lat=13.3&lon=124')
     assert status_code == 200
-#
-# def test_paramError(client):
-#     # wrong param
-#     status_code, body, data = do_get(client, '/summary?lat=3000&lon=124')
-#     assert status_code == 400
-#
-#     # blank param
-#     status_code, body, data = do_get(client, '/summary?lon=124')
-#     assert status_code == 400
-#
+
+def test_paramError(client):
+    # wrong param
+    status_code, body, data = do_get(client, '/summary?lat=3000&lon=124')
+    assert status_code == 400
+
+    # wrong param
+    status_code, body, data = do_get(client, '/summary?lat=90&lon=180')
+    assert status_code == 400
+
+    # blank param
+    status_code, body, data = do_get(client, '/summary?lon=124')
+    assert status_code == 400
+
 # def test_timeout(client):
 #     start_time = time.process_time()
 #     status_code, body, data = do_get(client, '/summary?lat=13.3&lon=124')
 #     end_time = time.process_time()
 #     assert (int(round((end_time - start_time) * 1000))) <= 1500
 #     assert status_code == 200
-#
+
