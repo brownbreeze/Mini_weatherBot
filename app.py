@@ -3,6 +3,9 @@ import json
 import requests
 import time
 import os
+from threading import Thread
+import functools
+import concurrent.futures as futures
 
 app = Flask(__name__)
 
@@ -84,21 +87,52 @@ def get_tempaerature_ment(idx, diff_temper, max_temp, min_temp):
     result += temperature_last_ment
     return result
 
+class TimeOutException(Exception):
+    pass
+def timeout(timelimit):
+    def decorator(func):
+        def decorated(*args, **kwargs):
+            with futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(func, *args, **kwargs)
+                try:
+                    result = future.result(timelimit)
+                except futures.TimeoutError:
+                    print('Timedout!')
+                    raise TimeoutError from None
+                else:
+                    print(result)
+                executor._threads.clear()
+                futures.thread._threads_queues.clear()
+                return result
+        return decorated
+    return decorator
+
+
 @elapsed_time
 @app.route('/summary')
-def summary(test = False):
-    #api_key = 'CMRJW4WT7V3QA5AOIGPBC'
-    api_key = get_apikey("Authorization")
+def summary():
+    lat = request.args.get('lat')
+    lon = request.args.get('lon')
+    start_time = time.perf_counter()
+    print(f'start time : {start_time}')
+    try:
+        result = get_summary_result(lat,lon)
+    except TimeoutError as e:
+        print('timeout occur', str(e))
+        return Response("Request Timeout",status=408)
+    except Exception as e:
+        print('timeout occur', str(e))
+        return Response("just except",status=408)
+    print(f'end time : {time.perf_counter()}, so total time : {time.perf_counter()-start_time}')
+    return result
+
+
+@timeout(1.5)
+def get_summary_result(lat,lon):
     current_list = list()
     forcast_list = list()
     history_list = list()
-    #for test
-    if test is False:
-        lat = request.args.get('lat')
-        lon = request.args.get('lon')
-    else :
-        lat = -13.3
-        lon = 125
+    api_key = get_apikey("Authorization")
 
     if lat is None or lon is None:
         return Response(
@@ -129,11 +163,6 @@ def summary(test = False):
 
     forcast_list.sort()
     history_list.sort()
-
-    for histo in history_list:
-        print(histo)
-    for forc in forcast_list:
-        print(forc)
 
     idx = 0
     diff_temper = 0

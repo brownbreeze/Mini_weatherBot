@@ -33,9 +33,10 @@ def test_paramError(client):
     assert status_code == 400
 
 def test_timeout(client):
-    for i in range(0, 10):
-        start_time = time.process_time()
+    for i in range(0, 2):
+        start_time = time.perf_counter()
         status_code, body, data = do_get(client, '/summary?lat=13.3&lon=124')
-        end_time = time.process_time()
+        end_time = time.perf_counter()
+        print(f'>>>>total time : {(int(round((end_time - start_time) * 1000)))}')
         assert ((int(round((end_time - start_time) * 1000))) <= 1500 ) and ( status_code == 200 )
 
