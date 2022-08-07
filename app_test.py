@@ -37,6 +37,6 @@ def test_timeout(client):
         start_time = time.perf_counter()
         status_code, body, data = do_get(client, '/summary?lat=13.3&lon=124')
         end_time = time.perf_counter()
-        print(f'\tpytest-total time check : {(int(round((end_time - start_time) * 1000)))}')
+        print(f'\tpytest-total time check : {(int(round((end_time - start_time) * 1000)))}\n')
         assert ((int(round((end_time - start_time) * 1000))) <= 1500 ) and ( status_code == 200 )
 
