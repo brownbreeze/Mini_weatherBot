@@ -3,8 +3,6 @@ import json
 import requests
 import time
 import os
-from threading import Thread
-import functools
 import concurrent.futures as futures
 
 app = Flask(__name__)
@@ -52,7 +50,7 @@ def current(lat, lon, api_key):
     current_url = '/current'
     response = requests.get(url+current_url, params={"lat":lat,"lon":lon, "api_key":api_key})
 
-    print(f'current : {response.content}')
+    print(f'\tcurrent : {response.content}')
     return [0, response.json()]
 
 def forcast(lat, lon, hour_offset, api_key):
@@ -60,7 +58,7 @@ def forcast(lat, lon, hour_offset, api_key):
     forcast_url = '/forecast/hourly'
     response = requests.get(url + forcast_url, params={"lat": lat, "lon": lon, "hour_offset":hour_offset, "api_key": api_key})
 
-    print(f'forcast {hour_offset}:{response.content}')
+    print(f'\tforcast {hour_offset}:{response.content}')
     return [hour_offset, response.json()]
 
 def history(lat, lon, hour_offset, api_key):
@@ -68,7 +66,7 @@ def history(lat, lon, hour_offset, api_key):
     history_url = '/historical/hourly'
     response = requests.get(url + history_url, params={"lat": lat, "lon": lon, "hour_offset":hour_offset, "api_key": api_key})
 
-    print(f'history {hour_offset}:{response.content}')
+    print(f'\thistory {hour_offset}:{response.content}')
     return [hour_offset, response.json()]
 
 def get_tempaerature_ment(idx, diff_temper, max_temp, min_temp):
@@ -87,8 +85,7 @@ def get_tempaerature_ment(idx, diff_temper, max_temp, min_temp):
     result += temperature_last_ment
     return result
 
-class TimeOutException(Exception):
-    pass
+
 def timeout(timelimit):
     def decorator(func):
         def decorated(*args, **kwargs):
@@ -113,17 +110,16 @@ def timeout(timelimit):
 def summary():
     lat = request.args.get('lat')
     lon = request.args.get('lon')
-    start_time = time.perf_counter()
-    print(f'start time : {start_time}')
+
     try:
         result = get_summary_result(lat,lon)
     except TimeoutError as e:
-        print('timeout occur', str(e))
+        print('Request Timeout', str(e))
         return Response("Request Timeout",status=408)
     except Exception as e:
-        print('timeout occur', str(e))
-        return Response("just except",status=408)
-    print(f'end time : {time.perf_counter()}, so total time : {time.perf_counter()-start_time}')
+        print('Internal Server Error', str(e))
+        return Response("Internal Server Error",status=500)
+
     return result
 
 
@@ -184,7 +180,6 @@ def get_summary_result(lat,lon):
         else :
             idx = 7
     greeting = greeting_ment_list[idx] if idx in range(0,7) else 7
-    print(greeting)
 
     # temperature
     idx = -1
@@ -198,7 +193,7 @@ def get_summary_result(lat,lon):
             max_temp = hist[1]["temp"]
         if min_temp > hist[1]["temp"]:
             min_temp = hist[1]["temp"]
-    print(f'diff : {diff_temper}, max : {max_temp}, min : {min_temp}')
+    print(f'\tget data - summary = diff : {diff_temper}, max : {max_temp}, min : {min_temp}')
     if diff_temper < 0 and current_value["temp"] >= 15:
         idx = 0
     elif diff_temper < 0 and current_value["temp"] < 15:
@@ -212,7 +207,6 @@ def get_summary_result(lat,lon):
     elif diff_temper == 0 and current_value["temp"] < 15:
         idx = 5
     temperature = get_tempaerature_ment(idx, diff_temper, max_temp, min_temp)
-    print(temperature)
 
     # heads_up
     heads_up = ''
@@ -251,7 +245,6 @@ def get_summary_result(lat,lon):
         else:
             idx =5
     heads_up = headsup_ment_list[idx-1]
-    print(heads_up)
 
     json_object = {
         "summary" :{
@@ -276,12 +269,10 @@ def get_apikey(key_name, json_filename='secret.json'):
     # json파일이 존재하면 json파일내의 모든 key, value값을 얻는다
     with open(json_filepath) as f:
         json_p = json.loads(f.read())
-        print("json_p:  ", json_p)
 
     try:
         # key에 해당하는 value를 얻는다 ex. json_p["Authorization"]
         value=json_p[key_name]
-        print(value)
         return value
     except KeyError:
         # 해당하는 key_name이 없는 경우이다
